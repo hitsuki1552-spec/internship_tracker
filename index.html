@@ -202,6 +202,80 @@
     font-family: inherit;
   }
   .btn-del:hover { background: var(--red-bg); }
+  .btn-edit {
+    padding: 4px 10px;
+    border-radius: var(--radius);
+    border: 0.5px solid var(--border2);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  .btn-edit:hover { background: var(--bg2); }
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--bg);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 480px;
+    border: 0.5px solid var(--border2);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    animation: modal-in 0.15s ease;
+  }
+  @keyframes modal-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .modal-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .modal-footer {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 1.25rem;
+  }
+  .btn-cancel {
+    padding: 8px 18px;
+    border-radius: var(--radius);
+    border: 0.5px solid var(--border2);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    font-size: 14px;
+    font-family: inherit;
+  }
+  .btn-cancel:hover { background: var(--bg2); }
+  .btn-save {
+    padding: 8px 22px;
+    border-radius: var(--radius);
+    border: none;
+    background: var(--blue-text);
+    color: #fff;
+    cursor: pointer;
+    font-size: 14px;
+    font-family: inherit;
+    font-weight: 500;
+  }
+  .btn-save:hover { opacity: 0.85; }
   .empty { text-align: center; padding: 2.5rem; color: var(--text3); font-size: 14px; }
   .form-card {
     background: var(--bg);
@@ -317,6 +391,52 @@
   </div>
 </div>
 
+<!-- Edit Modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModalOnOverlay(event)">
+  <div class="modal">
+    <div class="modal-title"><i class="ti ti-edit" aria-hidden="true"></i>内容を編集</div>
+    <input type="hidden" id="edit-id">
+    <div class="form-row">
+      <div class="field">
+        <label>会社名 *</label>
+        <input type="text" id="edit-company" placeholder="例：〇〇株式会社">
+      </div>
+      <div class="field" style="max-width:170px;">
+        <label>種類 *</label>
+        <select id="edit-type">
+          <option value="es">ES締め切り</option>
+          <option value="intern">インターン</option>
+          <option value="test">筆記/WEBテスト</option>
+          <option value="other">その他</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label>日付 *</label>
+        <input type="date" id="edit-date">
+      </div>
+      <div class="field" style="max-width:170px;">
+        <label>ステータス</label>
+        <select id="edit-status">
+          <option value="todo">未着手</option>
+          <option value="progress">対応中</option>
+          <option value="done">完了</option>
+          <option value="passed">期限切れ</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>メモ</label>
+      <input type="text" id="edit-note" placeholder="例：説明会参加済み、マイナビ経由など">
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
+      <button class="btn-save" onclick="saveEdit()"><i class="ti ti-check" aria-hidden="true"></i> 保存</button>
+    </div>
+  </div>
+</div>
+
 <script>
   const STORAGE_KEY = 'shukatu-items-v1';
 
@@ -395,6 +515,7 @@
                 <option value="done" ${item.status==='done'?'selected':''}>完了</option>
                 <option value="passed" ${item.status==='passed'?'selected':''}>期限切れ</option>
               </select>
+              <button class="btn-edit" onclick="openEdit(${item.id})" aria-label="編集"><i class="ti ti-pencil" aria-hidden="true"></i></button>
               <button class="btn-del" onclick="deleteItem(${item.id})" aria-label="削除"><i class="ti ti-trash" aria-hidden="true"></i></button>
             </div>
           </div>
@@ -458,9 +579,47 @@
     if (item) { item.status = val; save(); render(); }
   }
 
+  function openEdit(id) {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+    document.getElementById('edit-id').value = id;
+    document.getElementById('edit-company').value = item.company;
+    document.getElementById('edit-type').value = item.type;
+    document.getElementById('edit-date').value = item.date;
+    document.getElementById('edit-status').value = item.status;
+    document.getElementById('edit-note').value = item.note || '';
+    document.getElementById('modal-overlay').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+  }
+
+  function closeModalOnOverlay(e) {
+    if (e.target === document.getElementById('modal-overlay')) closeModal();
+  }
+
+  function saveEdit() {
+    const id = parseInt(document.getElementById('edit-id').value);
+    const company = document.getElementById('edit-company').value.trim();
+    const date = document.getElementById('edit-date').value;
+    if (!company || !date) { alert('会社名と日付は必須です'); return; }
+    const item = items.find(i => i.id === id);
+    if (item) {
+      item.company = company;
+      item.type    = document.getElementById('edit-type').value;
+      item.date    = date;
+      item.status  = document.getElementById('edit-status').value;
+      item.note    = document.getElementById('edit-note').value.trim();
+      save();
+      render();
+    }
+    closeModal();
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
   document.getElementById('inp-date').value = getFutureDate(7);
   render();
-</script>
 </body>
 </html>
-
