@@ -1,0 +1,257 @@
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); }
+.app { padding: 1rem 0; }
+.tabs { display: flex; gap: 8px; margin-bottom: 1.5rem; }
+.tab { padding: 7px 18px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: transparent; cursor: pointer; font-size: 14px; color: var(--color-text-secondary); transition: all 0.15s; }
+.tab.active { background: var(--color-background-secondary); color: var(--color-text-primary); font-weight: 500; border-color: var(--color-border-primary); }
+.tab:hover:not(.active) { background: var(--color-background-secondary); }
+.section { display: none; }
+.section.active { display: block; }
+.card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem 1.25rem; margin-bottom: 12px; }
+.row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 120px; }
+.field label { font-size: 12px; color: var(--color-text-secondary); }
+.field input, .field select { font-size: 14px; padding: 6px 10px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: var(--color-background-primary); color: var(--color-text-primary); width: 100%; }
+.btn { padding: 7px 16px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: transparent; cursor: pointer; font-size: 14px; color: var(--color-text-primary); white-space: nowrap; }
+.btn:hover { background: var(--color-background-secondary); }
+.btn-primary { background: var(--color-background-info); color: var(--color-text-info); border-color: var(--color-border-info); }
+.btn-primary:hover { opacity: 0.85; }
+.btn-danger { color: var(--color-text-danger); border-color: var(--color-border-danger); }
+.btn-danger:hover { background: var(--color-background-danger); }
+.badge { display: inline-block; padding: 2px 10px; border-radius: var(--border-radius-md); font-size: 12px; font-weight: 500; }
+.badge-es { background: var(--color-background-warning); color: var(--color-text-warning); }
+.badge-intern { background: var(--color-background-info); color: var(--color-text-info); }
+.badge-test { background: var(--color-background-danger); color: var(--color-text-danger); }
+.badge-other { background: var(--color-background-secondary); color: var(--color-text-secondary); }
+.status-badge { display: inline-block; padding: 2px 10px; border-radius: var(--border-radius-md); font-size: 12px; }
+.st-todo { background: var(--color-background-secondary); color: var(--color-text-secondary); }
+.st-progress { background: var(--color-background-info); color: var(--color-text-info); }
+.st-done { background: var(--color-background-success); color: var(--color-text-success); }
+.st-passed { background: var(--color-background-warning); color: var(--color-text-warning); }
+.company-name { font-weight: 500; font-size: 15px; color: var(--color-text-primary); }
+.item-date { font-size: 13px; color: var(--color-text-secondary); }
+.deadline-bar { height: 4px; border-radius: 2px; background: var(--color-border-tertiary); margin-top: 8px; overflow: hidden; }
+.deadline-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+.empty { text-align: center; padding: 2rem; color: var(--color-text-secondary); font-size: 14px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
+.stat { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 12px; text-align: center; }
+.stat-num { font-size: 24px; font-weight: 500; color: var(--color-text-primary); }
+.stat-label { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; }
+.separator { border: none; border-top: 0.5px solid var(--color-border-tertiary); margin: 12px 0; }
+.sort-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.sort-row label { font-size: 13px; color: var(--color-text-secondary); }
+.note-text { font-size: 13px; color: var(--color-text-secondary); margin-top: 4px; }
+</style>
+
+<h2 class="sr-only">就職活動管理アプリ — インターンと提出締め切りを管理するツール</h2>
+
+<div class="app">
+  <div class="stats" id="stats"></div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('list')"><i class="ti ti-list" aria-hidden="true"></i> 一覧</button>
+    <button class="tab" onclick="switchTab('add')"><i class="ti ti-plus" aria-hidden="true"></i> 追加</button>
+  </div>
+
+  <div class="section active" id="tab-list">
+    <div class="sort-row">
+      <label>並び替え：</label>
+      <select onchange="sortItems(this.value)" style="font-size:13px; padding:4px 8px; border-radius:var(--border-radius-md); border:0.5px solid var(--color-border-secondary); background:var(--color-background-primary); color:var(--color-text-primary);">
+        <option value="date">日付順</option>
+        <option value="company">会社名順</option>
+        <option value="type">種類順</option>
+        <option value="status">ステータス順</option>
+      </select>
+      <select onchange="filterItems(this.value)" style="font-size:13px; padding:4px 8px; border-radius:var(--border-radius-md); border:0.5px solid var(--color-border-secondary); background:var(--color-background-primary); color:var(--color-text-primary);">
+        <option value="all">すべて</option>
+        <option value="es">ES締め切り</option>
+        <option value="intern">インターン</option>
+        <option value="test">筆記/WEBテスト</option>
+        <option value="other">その他</option>
+      </select>
+    </div>
+    <div id="item-list"></div>
+  </div>
+
+  <div class="section" id="tab-add">
+    <div class="card">
+      <div class="row" style="margin-bottom:10px;">
+        <div class="field">
+          <label>会社名 *</label>
+          <input type="text" id="inp-company" placeholder="例：〇〇株式会社">
+        </div>
+        <div class="field" style="max-width:160px;">
+          <label>種類 *</label>
+          <select id="inp-type">
+            <option value="es">ES締め切り</option>
+            <option value="intern">インターン</option>
+            <option value="test">筆記/WEBテスト</option>
+            <option value="other">その他</option>
+          </select>
+        </div>
+      </div>
+      <div class="row" style="margin-bottom:10px;">
+        <div class="field">
+          <label>日付 *</label>
+          <input type="date" id="inp-date">
+        </div>
+        <div class="field" style="max-width:160px;">
+          <label>ステータス</label>
+          <select id="inp-status">
+            <option value="todo">未着手</option>
+            <option value="progress">対応中</option>
+            <option value="done">完了</option>
+            <option value="passed">期限切れ</option>
+          </select>
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:12px;">
+        <label>メモ</label>
+        <input type="text" id="inp-note" placeholder="例：説明会参加済み、〇〇経由で応募など">
+      </div>
+      <button class="btn btn-primary" onclick="addItem()"><i class="ti ti-plus" aria-hidden="true"></i> 追加する</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let items = JSON.parse(localStorage.getItem('job-items') || 'null') || [
+  { id: 1, company: '〇〇商事', type: 'es', date: getFutureDate(5), status: 'progress', note: 'マイナビ経由' },
+  { id: 2, company: '△△テクノロジー', type: 'intern', date: getFutureDate(12), status: 'todo', note: '1day インターン' },
+  { id: 3, company: '□□銀行', type: 'test', date: getFutureDate(3), status: 'todo', note: 'SPI対策必要' },
+];
+let currentFilter = 'all';
+let currentSort = 'date';
+let nextId = Math.max(...items.map(i => i.id), 0) + 1;
+
+function getFutureDate(daysAhead) {
+  const d = new Date(); d.setDate(d.getDate() + daysAhead);
+  return d.toISOString().split('T')[0];
+}
+
+function save() { localStorage.setItem('job-items', JSON.stringify(items)); }
+
+function typeLabel(t) { return { es: 'ES締め切り', intern: 'インターン', test: '筆記/WEBテスト', other: 'その他' }[t]; }
+function statusLabel(s) { return { todo: '未着手', progress: '対応中', done: '完了', passed: '期限切れ' }[s]; }
+
+function daysUntil(dateStr) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(dateStr); d.setHours(0,0,0,0);
+  return Math.round((d - today) / 86400000);
+}
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr);
+  const days = daysUntil(dateStr);
+  const base = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+  if (days < 0) return `${base} <span style="color:var(--color-text-danger);font-size:12px;">（${Math.abs(days)}日超過）</span>`;
+  if (days === 0) return `${base} <span style="color:var(--color-text-danger);font-size:12px;font-weight:500;">（今日！）</span>`;
+  if (days <= 3) return `${base} <span style="color:var(--color-text-warning);font-size:12px;">（あと${days}日）</span>`;
+  return `${base} <span style="color:var(--color-text-secondary);font-size:12px;">（あと${days}日）</span>`;
+}
+
+function deadlineColor(days) {
+  if (days < 0) return '#E24B4A';
+  if (days <= 3) return '#EF9F27';
+  if (days <= 7) return '#1D9E75';
+  return '#378ADD';
+}
+
+function deadlineProgress(days) {
+  if (days < 0) return 100;
+  if (days > 30) return 5;
+  return Math.round((1 - days / 30) * 100);
+}
+
+function render() {
+  let filtered = currentFilter === 'all' ? [...items] : items.filter(i => i.type === currentFilter);
+  if (currentSort === 'date') filtered.sort((a,b) => a.date.localeCompare(b.date));
+  else if (currentSort === 'company') filtered.sort((a,b) => a.company.localeCompare(b.company));
+  else if (currentSort === 'type') filtered.sort((a,b) => a.type.localeCompare(b.type));
+  else if (currentSort === 'status') filtered.sort((a,b) => a.status.localeCompare(b.status));
+
+  const el = document.getElementById('item-list');
+  if (filtered.length === 0) {
+    el.innerHTML = '<div class="empty"><i class="ti ti-inbox" style="font-size:32px; display:block; margin-bottom:8px;" aria-hidden="true"></i>登録されたデータがありません</div>';
+  } else {
+    el.innerHTML = filtered.map(item => {
+      const days = daysUntil(item.date);
+      const pct = deadlineProgress(days);
+      const color = deadlineColor(days);
+      return `<div class="card">
+        <div class="row" style="justify-content: space-between; margin-bottom:6px;">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="company-name">${item.company}</span>
+            <span class="badge badge-${item.type}">${typeLabel(item.type)}</span>
+            <span class="status-badge st-${item.status}">${statusLabel(item.status)}</span>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <select onchange="changeStatus(${item.id}, this.value)" style="font-size:12px; padding:3px 6px; border-radius:var(--border-radius-md); border:0.5px solid var(--color-border-secondary); background:var(--color-background-primary); color:var(--color-text-primary);">
+              <option value="todo" ${item.status==='todo'?'selected':''}>未着手</option>
+              <option value="progress" ${item.status==='progress'?'selected':''}>対応中</option>
+              <option value="done" ${item.status==='done'?'selected':''}>完了</option>
+              <option value="passed" ${item.status==='passed'?'selected':''}>期限切れ</option>
+            </select>
+            <button class="btn btn-danger" onclick="deleteItem(${item.id})" style="padding:3px 10px; font-size:13px;"><i class="ti ti-trash" aria-hidden="true"></i></button>
+          </div>
+        </div>
+        <div class="item-date"><i class="ti ti-calendar" style="font-size:14px; vertical-align:-2px; margin-right:4px;" aria-hidden="true"></i>${formatDate(item.date)}</div>
+        ${item.note ? `<div class="note-text"><i class="ti ti-notes" style="font-size:14px; vertical-align:-2px; margin-right:4px;" aria-hidden="true"></i>${item.note}</div>` : ''}
+        <div class="deadline-bar"><div class="deadline-fill" style="width:${pct}%; background:${color};"></div></div>
+      </div>`;
+    }).join('');
+  }
+
+  const total = items.length;
+  const urgent = items.filter(i => { const d = daysUntil(i.date); return d >= 0 && d <= 7 && i.status !== 'done'; }).length;
+  const done = items.filter(i => i.status === 'done').length;
+  const es = items.filter(i => i.type === 'es').length;
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><div class="stat-num">${total}</div><div class="stat-label">登録件数</div></div>
+    <div class="stat"><div class="stat-num" style="color:var(--color-text-danger);">${urgent}</div><div class="stat-label">7日以内の期限</div></div>
+    <div class="stat"><div class="stat-num" style="color:var(--color-text-success);">${done}</div><div class="stat-label">完了</div></div>
+    <div class="stat"><div class="stat-num" style="color:var(--color-text-warning);">${es}</div><div class="stat-label">ES締め切り</div></div>
+  `;
+}
+
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach((el,i) => el.classList.toggle('active', ['list','add'][i] === t));
+  document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+}
+
+function sortItems(v) { currentSort = v; render(); }
+function filterItems(v) { currentFilter = v; render(); }
+
+function addItem() {
+  const company = document.getElementById('inp-company').value.trim();
+  const type = document.getElementById('inp-type').value;
+  const date = document.getElementById('inp-date').value;
+  const status = document.getElementById('inp-status').value;
+  const note = document.getElementById('inp-note').value.trim();
+  if (!company || !date) { alert('会社名と日付は必須です'); return; }
+  items.push({ id: nextId++, company, type, date, status, note });
+  save();
+  document.getElementById('inp-company').value = '';
+  document.getElementById('inp-date').value = '';
+  document.getElementById('inp-note').value = '';
+  render();
+  switchTab('list');
+}
+
+function deleteItem(id) {
+  if (!confirm('削除してよいですか？')) return;
+  items = items.filter(i => i.id !== id);
+  save();
+  render();
+}
+
+function changeStatus(id, val) {
+  const item = items.find(i => i.id === id);
+  if (item) { item.status = val; save(); render(); }
+}
+
+document.getElementById('inp-date').value = getFutureDate(7);
+render();
+</script>
